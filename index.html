@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0f">
+<title>Firestarter</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #13131a;
+  --surface-hover: #1a1a24;
+  --border: #1e1e2a;
+  --border-accent: #2a2a3a;
+  --text: #e8e6e3;
+  --text-dim: #8a8694;
+  --text-muted: #5a5666;
+  --violet: #6c71c4;
+  --violet-glow: rgba(108, 113, 196, 0.15);
+  --violet-dim: rgba(108, 113, 196, 0.4);
+  --red: #dc322f;
+  --red-glow: rgba(220, 50, 47, 0.12);
+  --amber: #b58900;
+  --amber-glow: rgba(181, 137, 0, 0.12);
+  --green: #2aa198;
+  --green-glow: rgba(42, 161, 152, 0.15);
+  --blue: #268bd2;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Manrope', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Header */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 16px 20px 12px;
+  background: linear-gradient(180deg, var(--bg) 60%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.header h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, var(--text) 0%, var(--violet) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+.header-stats {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.stat {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.stat-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.stat-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+}
+
+.stat-overdue .stat-num { color: var(--red); }
+.stat-due .stat-num { color: var(--amber); }
+.stat-stories .stat-num { color: var(--violet); }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  padding: 0 20px;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  padding: 12px 0;
+  margin-right: 24px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab.active {
+  color: var(--violet);
+  border-bottom-color: var(--violet);
+}
+
+/* Content */
+.content {
+  padding: 12px 16px 100px;
+}
+
+.section-hidden { display: none; }
+
+/* Spoke Group */
+.spoke-group {
+  margin-bottom: 20px;
+}
+
+.spoke-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+}
+
+.spoke-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.spoke-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--surface);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Task Card */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 3px 0 0 3px;
+}
+
+.card.priority-high::before { background: var(--red); }
+.card.priority-medium::before { background: var(--amber); }
+.card.priority-low::before { background: var(--green); }
+.card.priority-urgent::before { background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+.card.overdue {
+  border-color: rgba(220, 50, 47, 0.3);
+  background: linear-gradient(135deg, var(--surface) 0%, rgba(220, 50, 47, 0.04) 100%);
+}
+
+.card.done {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.checkbox {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border: 2px solid var(--border-accent);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  margin-top: 1px;
+}
+
+.checkbox:active {
+  transform: scale(0.85);
+}
+
+.checkbox.checked {
+  background: var(--violet);
+  border-color: var(--violet);
+}
+
+.checkbox.checked::after {
+  content: '✓';
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+  margin-bottom: 6px;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.badge-date {
+  color: var(--text-dim);
+  background: rgba(255,255,255,0.05);
+}
+
+.badge-overdue {
+  color: var(--red);
+  background: var(--red-glow);
+  font-weight: 600;
+}
+
+.badge-today {
+  color: var(--amber);
+  background: var(--amber-glow);
+}
+
+.badge-outlet {
+  color: var(--blue);
+  background: rgba(38, 139, 210, 0.1);
+}
+
+.badge-status {
+  color: var(--violet);
+  background: var(--violet-glow);
+}
+
+/* Story Card */
+.story-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.story-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--violet);
+  border-radius: 3px 0 0 3px;
+}
+
+.story-card.overdue::before { background: var(--red); }
+.story-card.overdue {
+  border-color: rgba(220, 50, 47, 0.3);
+}
+
+.story-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.35;
+  margin-bottom: 8px;
+}
+
+.story-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Date Editor */
+.date-editor {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border-accent);
+  padding: 20px;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  z-index: 200;
+  border-radius: 16px 16px 0 0;
+}
+
+.date-editor.open { transform: translateY(0); }
+
+.date-editor-title {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+.date-editor input[type="date"] {
+  width: 100%;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border-accent);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.date-editor-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--violet);
+  color: white;
+}
+
+.btn-ghost {
+  background: var(--bg);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+
+/* Overlay */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 150;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.overlay.open { opacity: 1; pointer-events: all; }
+
+/* Loading */
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 40px;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border);
+  border-top-color: var(--violet);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Refresh indicator */
+.refresh-bar {
+  height: 2px;
+  background: var(--violet);
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 200;
+  width: 0;
+  transition: width 0.3s;
+}
+
+.refresh-bar.active {
+  animation: refresh-sweep 1s ease forwards;
+}
+
+@keyframes refresh-sweep {
+  0% { width: 0; }
+  50% { width: 70%; }
+  100% { width: 100%; opacity: 0; }
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* Setup screen */
+.setup {
+  padding: 40px 20px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.setup h2 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.setup p {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-bottom: 24px;
+}
+
+.setup input[type="text"] {
+  width: 100%;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border-accent);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.setup .btn { width: 100%; }
+</style>
+</head>
+<body>
+
+<div class="refresh-bar" id="refreshBar"></div>
+
+<div id="app">
+  <!-- Setup screen -->
+  <div class="setup" id="setupScreen">
+    <h2>Firestarter</h2>
+    <p>Enter your Airtable Personal Access Token to connect.</p>
+    <input type="text" id="patInput" placeholder="pat..." autocomplete="off">
+    <button class="btn btn-primary" onclick="savePAT()">Connect</button>
+  </div>
+
+  <!-- Main app -->
+  <div id="mainApp" style="display:none">
+    <div class="header">
+      <div class="header-top">
+        <h1>Firestarter</h1>
+        <span class="header-time" id="headerTime"></span>
+      </div>
+      <div class="header-stats">
+        <div class="stat stat-overdue">
+          <span class="stat-num" id="statOverdue">-</span>
+          <span class="stat-label">Overdue</span>
+        </div>
+        <div class="stat stat-due">
+          <span class="stat-num" id="statDue">-</span>
+          <span class="stat-label">Today</span>
+        </div>
+        <div class="stat stat-stories">
+          <span class="stat-num" id="statStories">-</span>
+          <span class="stat-label">Stories</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="tasks" onclick="switchTab('tasks')">Tasks</button>
+      <button class="tab" data-tab="stories" onclick="switchTab('stories')">Stories</button>
+    </div>
+
+    <div class="content">
+      <div id="tasksSection"></div>
+      <div id="storiesSection" class="section-hidden"></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeDateEditor()"></div>
+<div class="date-editor" id="dateEditor">
+  <div class="date-editor-title" id="dateEditorTitle">Edit due date</div>
+  <input type="date" id="dateInput">
+  <div class="date-editor-actions">
+    <button class="btn btn-ghost" onclick="closeDateEditor()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveDate()">Save</button>
+  </div>
+</div>
+
+<script>
+const BASE_ID = 'appCeRo96G0vKIrxA';
+const TASKS_TABLE = 'tbl0COZjxQicoVBw6';
+const STORIES_TABLE = 'tbltsxgrzpLaiM3VD';
+const TASKS_VIEW = 'viw93dULjLwyYeqZo';
+const STORIES_VIEW = 'viwgAR9F1N5xWxoWy';
+
+let PAT = localStorage.getItem('airtable_pat') || '';
+let editingRecord = null;
+let editingTable = null;
+let editingField = null;
+
+// Setup
+if (PAT) {
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  loadAll();
+}
+
+function savePAT() {
+  PAT = document.getElementById('patInput').value.trim();
+  if (!PAT) return;
+  localStorage.setItem('airtable_pat', PAT);
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  loadAll();
+}
+
+// Time
+function updateTime() {
+  const now = new Date();
+  const opts = { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' };
+  document.getElementById('headerTime').textContent = now.toLocaleDateString('en-US', opts);
+}
+updateTime();
+setInterval(updateTime, 30000);
+
+// API
+async function airtableFetch(table, params = {}) {
+  const url = new URL(`https://api.airtable.com/v0/${BASE_ID}/${table}`);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.append(k, v));
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${PAT}` } });
+  if (!res.ok) throw new Error(`Airtable error: ${res.status}`);
+  return res.json();
+}
+
+async function airtableUpdate(table, recordId, fields) {
+  const res = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${table}/${recordId}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${PAT}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields })
+  });
+  if (!res.ok) throw new Error(`Update error: ${res.status}`);
+  return res.json();
+}
+
+// Load
+async function loadAll() {
+  const bar = document.getElementById('refreshBar');
+  bar.classList.remove('active');
+  void bar.offsetWidth;
+  bar.classList.add('active');
+
+  try {
+    await Promise.all([loadTasks(), loadStories()]);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function today() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function isOverdue(dateStr) {
+  if (!dateStr) return false;
+  return dateStr < today();
+}
+
+function isToday(dateStr) {
+  return dateStr === today();
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T12:00:00');
+  const now = new Date();
+  const diff = Math.round((d - now) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  if (diff === -1) return 'Yesterday';
+  if (diff < -1) return `${Math.abs(diff)}d overdue`;
+  if (diff <= 7) return d.toLocaleDateString('en-US', { weekday: 'short' });
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// Tasks
+async function loadTasks() {
+  const data = await airtableFetch(TASKS_TABLE, { view: TASKS_VIEW });
+  const records = data.records || [];
+
+  let overdueCount = 0;
+  let todayCount = 0;
+
+  // Group by tag
+  const groups = {};
+  records.forEach(r => {
+    const f = r.fields;
+    const tags = f.Tags || ['Untagged'];
+    const tag = tags[0] || 'Untagged';
+    if (!groups[tag]) groups[tag] = [];
+    groups[tag].push(r);
+    if (f['Due Date'] && isOverdue(f['Due Date'])) overdueCount++;
+    if (f['Due Date'] && isToday(f['Due Date'])) todayCount++;
+  });
+
+  document.getElementById('statOverdue').textContent = overdueCount;
+  document.getElementById('statDue').textContent = todayCount;
+
+  const tagOrder = ['Urgent', 'Sales', 'Editorial', 'Accounting', 'Admin', 'Marketing', 'Development', 'Outreach', 'Support', 'Personal', 'Untagged'];
+
+  let html = '';
+  tagOrder.forEach(tag => {
+    const items = groups[tag];
+    if (!items || items.length === 0) return;
+
+    // Sort: priority then date
+    const pOrder = { Urgent: 0, High: 1, Medium: 2, Low: 3 };
+    items.sort((a, b) => {
+      const pa = pOrder[a.fields.Priority] ?? 2;
+      const pb = pOrder[b.fields.Priority] ?? 2;
+      if (pa !== pb) return pa - pb;
+      const da = a.fields['Due Date'] || '9999';
+      const db = b.fields['Due Date'] || '9999';
+      return da.localeCompare(db);
+    });
+
+    html += `<div class="spoke-group">`;
+    html += `<div class="spoke-label">${tag} <span class="spoke-count">${items.length}</span></div>`;
+
+    items.forEach(r => {
+      const f = r.fields;
+      const isDone = f.Status === 'Done';
+      const overdue = isOverdue(f['Due Date']);
+      const todayItem = isToday(f['Due Date']);
+      const priority = (f.Priority || 'medium').toLowerCase();
+
+      html += `<div class="card priority-${priority} ${overdue ? 'overdue' : ''} ${isDone ? 'done' : ''}">`;
+      html += `<div class="card-top">`;
+      html += `<div class="checkbox ${isDone ? 'checked' : ''}" onclick="toggleTask('${r.id}', ${isDone})"></div>`;
+      html += `<div class="card-info">`;
+      html += `<div class="card-title">${f['Task Name'] || 'Untitled'}</div>`;
+      html += `<div class="card-meta">`;
+      if (f['Due Date']) {
+        const cls = overdue ? 'badge-overdue' : todayItem ? 'badge-today' : 'badge-date';
+        html += `<span class="badge ${cls}" onclick="openDateEditor('${r.id}', '${TASKS_TABLE}', 'Due Date', '${f['Due Date'] || ''}')">${formatDate(f['Due Date'])}</span>`;
+      }
+      html += `</div></div></div></div>`;
+    });
+
+    html += `</div>`;
+  });
+
+  if (records.length === 0) {
+    html = `<div class="empty-state">All clear. Nothing due.</div>`;
+  }
+
+  document.getElementById('tasksSection').innerHTML = html;
+}
+
+// Stories
+async function loadStories() {
+  const data = await airtableFetch(STORIES_TABLE, { view: STORIES_VIEW });
+  const records = (data.records || []).filter(r => {
+    const s = r.fields.Status;
+    return s && s !== 'Published' && s !== 'Killed';
+  });
+
+  // Sort by deadline
+  records.sort((a, b) => {
+    const da = a.fields.Deadline || '9999';
+    const db = b.fields.Deadline || '9999';
+    return da.localeCompare(db);
+  });
+
+  let storyCount = 0;
+  records.forEach(r => {
+    if (r.fields.Deadline && (isToday(r.fields.Deadline) || isOverdue(r.fields.Deadline))) storyCount++;
+  });
+  document.getElementById('statStories').textContent = storyCount;
+
+  let html = '';
+  records.forEach(r => {
+    const f = r.fields;
+    const overdue = isOverdue(f.Deadline);
+    const todayItem = isToday(f.Deadline);
+    const outlets = f.Outlets ? (Array.isArray(f.Outlets) ? f.Outlets : [f.Outlets]) : [];
+
+    html += `<div class="story-card ${overdue ? 'overdue' : ''}">`;
+    html += `<div class="story-title">${f['Story Title'] || 'Untitled'}</div>`;
+    html += `<div class="story-meta">`;
+    if (f.Status) html += `<span class="badge badge-status">${f.Status}</span>`;
+    if (f.Deadline) {
+      const cls = overdue ? 'badge-overdue' : todayItem ? 'badge-today' : 'badge-date';
+      html += `<span class="badge ${cls}" onclick="openDateEditor('${r.id}', '${STORIES_TABLE}', 'Deadline', '${f.Deadline || ''}')">${formatDate(f.Deadline)}</span>`;
+    }
+    outlets.forEach(o => {
+      const short = o === 'News in the Grove' ? 'NitG' : o === 'Banks Post' ? 'BP' : o;
+      html += `<span class="badge badge-outlet">${short}</span>`;
+    });
+    html += `</div></div>`;
+  });
+
+  if (records.length === 0) {
+    html = `<div class="empty-state">No active stories.</div>`;
+  }
+
+  document.getElementById('storiesSection').innerHTML = html;
+}
+
+// Toggle task
+async function toggleTask(id, currentlyDone) {
+  const newStatus = currentlyDone ? 'Not Started' : 'Done';
+  try {
+    await airtableUpdate(TASKS_TABLE, id, { Status: { name: newStatus } });
+    loadTasks();
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+// Tabs
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  document.getElementById('tasksSection').classList.toggle('section-hidden', tab !== 'tasks');
+  document.getElementById('storiesSection').classList.toggle('section-hidden', tab !== 'stories');
+}
+
+// Date editor
+function openDateEditor(recordId, table, field, currentDate) {
+  editingRecord = recordId;
+  editingTable = table;
+  editingField = field;
+  document.getElementById('dateInput').value = currentDate || '';
+  document.getElementById('dateEditorTitle').textContent = `Edit ${field === 'Deadline' ? 'deadline' : 'due date'}`;
+  document.getElementById('dateEditor').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeDateEditor() {
+  document.getElementById('dateEditor').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+  editingRecord = null;
+}
+
+async function saveDate() {
+  if (!editingRecord) return;
+  const newDate = document.getElementById('dateInput').value;
+  try {
+    await airtableUpdate(editingTable, editingRecord, { [editingField]: newDate || null });
+    closeDateEditor();
+    loadAll();
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+// Auto-refresh
+setInterval(loadAll, 60000);
+</script>
+</body>
+</html>
