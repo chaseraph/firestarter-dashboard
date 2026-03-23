@@ -562,7 +562,7 @@ const BASE_ID = 'appCeRo96G0vKIrxA';
 const TASKS_TABLE = 'tbl0COZjxQicoVBw6';
 const STORIES_TABLE = 'tbltsxgrzpLaiM3VD';
 // Use formula instead of views — views filter too aggressively
-const TASKS_FORMULA = encodeURIComponent("AND({Status} != 'Done', {Due Date} != BLANK(), IS_BEFORE({Due Date}, DATEADD(TODAY(), 2, 'days')))");
+const TASKS_FORMULA = encodeURIComponent("AND({Status} != 'Done', {Due Date} != BLANK(), IS_BEFORE({Due Date}, DATEADD(TODAY(), 1, 'days')))");
 const STORIES_FORMULA = encodeURIComponent("AND({Status} != 'Published', {Status} != 'Killed', {Deadline} != BLANK())");
 
 let PAT = localStorage.getItem('airtable_pat') || '';
