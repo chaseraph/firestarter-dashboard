@@ -562,7 +562,8 @@ const BASE_ID = 'appCeRo96G0vKIrxA';
 const TASKS_TABLE = 'tbl0COZjxQicoVBw6';
 const STORIES_TABLE = 'tbltsxgrzpLaiM3VD';
 const TASKS_VIEW_ID = 'viw93dULjLwyYeqZo';
-const STORIES_VIEW_ID = 'viwgAR9F1N5xWxoWy';
+// Fetch all non-published stories, filter client-side for today/overdue
+const STORIES_USE_FORMULA = true;
 
 let PAT = localStorage.getItem('airtable_pat') || '';
 let editingRecord = null;
@@ -729,7 +730,8 @@ async function loadTasks() {
 
 // Stories
 async function loadStories() {
-  const data = await airtableFetch(STORIES_TABLE, { view: STORIES_VIEW_ID });
+  const formula = "AND(OR({Status}='Assigned',{Status}='In-Process',{Status}='Pitch',{Status}='Story Idea',{Status}='All materials gathered'),{Deadline}!=BLANK(),IS_BEFORE({Deadline},DATEADD(TODAY(),1,'days')))";
+  const data = await airtableFetch(STORIES_TABLE, { filterByFormula: formula });
   const records = (data.records || []).filter(r => {
     const s = r.fields.Status;
     return s && s !== 'Published' && s !== 'Killed';
