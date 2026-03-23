@@ -785,7 +785,7 @@ async function toggleTask(id, currentlyDone) {
   const cb = event.target.closest('.checkbox') || event.target;
   cb.classList.toggle('checked');
   try {
-    await airtableUpdate(TASKS_TABLE, id, { Status: { name: newStatus } });
+    await airtableUpdate(TASKS_TABLE, id, { Status: newStatus });
     setTimeout(() => loadTasks(), 500); // brief delay so animation is visible
   } catch (e) {
     console.error(e);
