@@ -730,7 +730,14 @@ async function loadTasks() {
 
 // Stories
 async function loadStories() {
-  const formula = "AND(OR({Status}='Assigned',{Status}='In-Process',{Status}='Pitch',{Status}='Story Idea',{Status}='All materials gathered'),{Deadline}!=BLANK(),IS_BEFORE({Deadline},DATEADD(TODAY(),1,'days')))";
+  // Use explicit date to avoid UTC timezone issues — compute today in Pacific time
+  const now = new Date();
+  const pacific = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+  const todayStr = pacific.getFullYear() + '-' + String(pacific.getMonth()+1).padStart(2,'0') + '-' + String(pacific.getDate()).padStart(2,'0');
+  const tomorrowPacific = new Date(pacific);
+  tomorrowPacific.setDate(tomorrowPacific.getDate() + 1);
+  const tomorrowStr = tomorrowPacific.getFullYear() + '-' + String(tomorrowPacific.getMonth()+1).padStart(2,'0') + '-' + String(tomorrowPacific.getDate()).padStart(2,'0');
+  const formula = "AND(OR({Status}='Assigned',{Status}='In-Process',{Status}='Pitch',{Status}='Story Idea',{Status}='All materials gathered'),{Deadline}!=BLANK(),IS_BEFORE({Deadline},'" + tomorrowStr + "'))";
   const data = await airtableFetch(STORIES_TABLE, { filterByFormula: formula });
   const records = (data.records || []).filter(r => {
     const s = r.fields.Status;
