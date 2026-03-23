@@ -375,6 +375,12 @@ body {
   font-family: 'JetBrains Mono', monospace;
   font-size: 14px;
   margin-bottom: 12px;
+  -webkit-appearance: none;
+}
+
+.date-editor input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
 }
 
 .date-editor-actions {
@@ -830,6 +836,8 @@ function closeDateEditor() {
 
 async function saveDate() {
   if (!editingRecord) return;
+  // Blur the date input first to dismiss any native picker
+  document.getElementById('dateInput').blur();
   const newDate = document.getElementById('dateInput').value;
   try {
     await airtableUpdate(editingTable, editingRecord, { [editingField]: newDate || null });
@@ -837,8 +845,14 @@ async function saveDate() {
     loadAll();
   } catch (e) {
     console.error(e);
+    alert('Failed to save: ' + e.message);
   }
 }
+
+// Auto-save when date is picked (no need to hit Save)
+document.getElementById('dateInput').addEventListener('change', function() {
+  saveDate();
+});
 
 // Auto-refresh
 setInterval(loadAll, 60000);
