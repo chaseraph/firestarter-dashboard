@@ -561,8 +561,7 @@ body {
 const BASE_ID = 'appCeRo96G0vKIrxA';
 const TASKS_TABLE = 'tbl0COZjxQicoVBw6';
 const STORIES_TABLE = 'tbltsxgrzpLaiM3VD';
-// Use formula instead of views — views filter too aggressively
-const TASKS_FORMULA = encodeURIComponent("AND({Status} != 'Done', {Due Date} != BLANK(), IS_BEFORE({Due Date}, DATEADD(TODAY(), 1, 'days')))");
+const TASKS_VIEW_ID = 'viw93dULjLwyYeqZo';
 const STORIES_FORMULA = encodeURIComponent("AND({Status} != 'Published', {Status} != 'Killed', {Deadline} != BLANK())");
 
 let PAT = localStorage.getItem('airtable_pat') || '';
@@ -656,7 +655,7 @@ function formatDate(dateStr) {
 
 // Tasks
 async function loadTasks() {
-  const data = await airtableFetch(TASKS_TABLE, { filterByFormula: decodeURIComponent(TASKS_FORMULA), 'sort[0][field]': 'Due Date', 'sort[0][direction]': 'asc' });
+  const data = await airtableFetch(TASKS_TABLE, { view: TASKS_VIEW_ID });
   const records = data.records || [];
 
   let overdueCount = 0;
