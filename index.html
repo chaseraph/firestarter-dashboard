@@ -562,7 +562,7 @@ const BASE_ID = 'appCeRo96G0vKIrxA';
 const TASKS_TABLE = 'tbl0COZjxQicoVBw6';
 const STORIES_TABLE = 'tbltsxgrzpLaiM3VD';
 const TASKS_VIEW_ID = 'viw93dULjLwyYeqZo';
-const STORIES_FORMULA = encodeURIComponent("AND({Status} != 'Published', {Status} != 'Killed', {Deadline} != BLANK())");
+const STORIES_VIEW_ID = 'viwgAR9F1N5xWxoWy';
 
 let PAT = localStorage.getItem('airtable_pat') || '';
 let editingRecord = null;
@@ -729,7 +729,7 @@ async function loadTasks() {
 
 // Stories
 async function loadStories() {
-  const data = await airtableFetch(STORIES_TABLE, { filterByFormula: decodeURIComponent(STORIES_FORMULA), 'sort[0][field]': 'Deadline', 'sort[0][direction]': 'asc' });
+  const data = await airtableFetch(STORIES_TABLE, { view: STORIES_VIEW_ID });
   const records = (data.records || []).filter(r => {
     const s = r.fields.Status;
     return s && s !== 'Published' && s !== 'Killed';
