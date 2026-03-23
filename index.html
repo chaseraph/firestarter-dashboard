@@ -561,8 +561,9 @@ body {
 const BASE_ID = 'appCeRo96G0vKIrxA';
 const TASKS_TABLE = 'tbl0COZjxQicoVBw6';
 const STORIES_TABLE = 'tbltsxgrzpLaiM3VD';
-const TASKS_VIEW = 'viw93dULjLwyYeqZo';
-const STORIES_VIEW = 'viwgAR9F1N5xWxoWy';
+// Use formula instead of views — views filter too aggressively
+const TASKS_FORMULA = encodeURIComponent("AND({Status} != 'Done', {Due Date} != BLANK(), IS_BEFORE({Due Date}, DATEADD(TODAY(), 2, 'days')))");
+const STORIES_FORMULA = encodeURIComponent("AND({Status} != 'Published', {Status} != 'Killed', {Deadline} != BLANK())");
 
 let PAT = localStorage.getItem('airtable_pat') || '';
 let editingRecord = null;
@@ -655,7 +656,7 @@ function formatDate(dateStr) {
 
 // Tasks
 async function loadTasks() {
-  const data = await airtableFetch(TASKS_TABLE, { view: TASKS_VIEW });
+  const data = await airtableFetch(TASKS_TABLE, { filterByFormula: decodeURIComponent(TASKS_FORMULA), 'sort[0][field]': 'Due Date', 'sort[0][direction]': 'asc' });
   const records = data.records || [];
 
   let overdueCount = 0;
@@ -729,7 +730,7 @@ async function loadTasks() {
 
 // Stories
 async function loadStories() {
-  const data = await airtableFetch(STORIES_TABLE, { view: STORIES_VIEW });
+  const data = await airtableFetch(STORIES_TABLE, { filterByFormula: decodeURIComponent(STORIES_FORMULA), 'sort[0][field]': 'Deadline', 'sort[0][direction]': 'asc' });
   const records = (data.records || []).filter(r => {
     const s = r.fields.Status;
     return s && s !== 'Published' && s !== 'Killed';
@@ -780,11 +781,17 @@ async function loadStories() {
 // Toggle task
 async function toggleTask(id, currentlyDone) {
   const newStatus = currentlyDone ? 'Not Started' : 'Done';
+  // Optimistic UI — immediately update checkbox
+  event.stopPropagation();
+  const cb = event.target.closest('.checkbox') || event.target;
+  cb.classList.toggle('checked');
   try {
     await airtableUpdate(TASKS_TABLE, id, { Status: { name: newStatus } });
-    loadTasks();
+    setTimeout(() => loadTasks(), 500); // brief delay so animation is visible
   } catch (e) {
     console.error(e);
+    cb.classList.toggle('checked'); // revert on error
+    alert('Failed to update: ' + e.message);
   }
 }
 
